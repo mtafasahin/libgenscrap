@@ -140,8 +140,15 @@ public class BooksModel : PageModel
     public void MarkBooksAsSeen(SqliteConnection conn, IEnumerable<int> bookIds)
     {
         using var cmd = conn.CreateCommand();
-        cmd.CommandText = "UPDATE Books SET IsNew = FALSE WHERE Id IN (@Ids)";
-        cmd.Parameters.AddWithValue("@Ids", string.Join(",", bookIds));
+
+        var idParams = bookIds.Select((id, index) => $"@id{index}").ToList();
+        cmd.CommandText = $"UPDATE Books SET IsNew = 0 WHERE Id IN ({string.Join(",", idParams)})";
+
+        for (int i = 0; i < bookIds.Count(); i++)
+        {
+            cmd.Parameters.AddWithValue($"@id{i}", bookIds.ElementAt(i));
+        }
+
         cmd.ExecuteNonQuery();
     }
 
