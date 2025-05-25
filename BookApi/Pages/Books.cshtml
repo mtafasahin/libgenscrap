@@ -1,0 +1,414 @@
+﻿@page
+@model BooksModel
+@{
+    ViewData["Title"] = "Book List";
+}
+
+<style>
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        font-family: Arial, sans-serif;
+    }
+    th, td {
+        padding: 10px 15px;
+        border: 1px solid #ddd;
+        text-align: left;
+    }
+    th {
+        background-color: #f5f5f5;
+        font-weight: bold;
+    }
+    tr:nth-child(even) {
+        background-color: #fafafa;
+    }
+    tr:hover {
+        background-color: #eef;
+    }
+    form {
+        margin-top: 1rem;
+        margin-bottom: 1rem;
+    }
+    input[type="text"], select {
+        padding: 8px;
+        font-size: 14px;
+        margin-right: 10px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    button {
+        padding: 8px 14px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 14px;
+        cursor: pointer;
+    }
+    button:hover {
+        background-color: #0056b3;
+    }
+    .pagination {
+        margin: 1.5rem;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 5px;
+        flex-wrap: wrap;
+    }
+    .page-button {
+        padding: 6px 12px;
+        background-color: #f0f0f0;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #007bff;
+    }
+    .page-button:hover {
+        background-color: #e0e0e0;
+    }
+    .page-button.active {
+        font-weight: bold;
+        background-color: #007bff;
+        color: white;
+    }
+    .book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+.book-card {
+    border: 1px solid #ccc;
+    padding: 10px;
+    border-radius: 8px;
+    text-align: center;
+    height: 225px;
+    position: relative;
+}
+
+.cover-thumb {
+    max-width: 100%;
+    max-height: 120px;
+    border-radius: 4px;
+    margin-bottom: 10px;
+}
+
+.book-author {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.big-bold {
+    font-weight: bold;
+    font-size: 1.1rem;
+    line-height: 1.3;
+}
+
+.book-title,
+.book-author {
+    text-align: left;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;       /* Max 3 satır */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+}
+
+.book-title {
+    font-weight: bold;
+    font-size: 1.1rem;
+}
+
+.card-badges {
+    position: absolute;
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    display: flex;
+    justify-content: space-between;
+    pointer-events: none;
+    
+}
+
+.publisher-badge,
+.year-badge {
+    background-color: #007bff;
+    color: white;
+    font-size: 0.65rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    max-width: 45%;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 20px;
+    align-items: center;
+}
+
+.card {
+    @* cursor: pointer; *@
+    text-align: center;
+    background-color: #fff;
+    padding: 30px;
+    width: 180px;
+    height: 310px;
+    border-radius: 20px;
+    margin: 10px;
+    transition: 0.3s;
+    border: solid 1px blanchedalmond;
+}
+
+.card h3 {
+    font-size: 1em;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 700;
+    color: #555;
+    text-align: left;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;       /* Max 3 satır */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+}
+.card:hover h3 {
+    @* color: #fff; *@
+}
+
+.card p {
+    @* padding: 20px; *@
+    font-size: 0.80em;
+    font-family: 'Poppins', sans-serif;
+    font-weight: 400;
+    text-align: left;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;       /* Max 1 satır */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    word-break: break-word;
+}
+.card:hover p {
+    @* color: #fff; *@
+}
+
+button {
+    cursor: pointer;
+    padding: 10px 30px;
+    border: none;
+    background-color: #40c4ff;
+    border-radius: 20px;
+    color: #fff;
+    transition: 0.5s;
+}
+button:hover {
+    background-color: #084994;
+    color: #fff;
+}
+.card:hover{
+    background-color: blanchedalmond
+}
+
+</style>
+
+<h2>Book List</h2>
+
+<form method="post">
+    <button type="submit" asp-page-handler="Scrape" class="page-button">📡 Start Scraping</button>
+</form>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script>
+<script>
+    const connection = new signalR.HubConnectionBuilder()
+        .withUrl("/scrapinghub")
+        .build();
+
+    connection.on("ScrapingProgress", function (message) {
+        document.getElementById("scrapingStatus").innerText = message;
+    });
+
+    connection.start().catch(err => console.error(err.toString()));
+</script>
+<div id="scrapingStatus" style="margin-top:20px; font-weight:bold;"></div>
+
+<form method="get" class="mb-3">
+    <input type="text" name="searchTitle" value="@Model.SearchTitle" placeholder="Search title..." />
+
+    <select name="language">
+        <option value="">All Languages</option>
+        @foreach (var lang in Model.AvailableLanguages)
+        {
+            <option value="@lang" selected="@(Model.Language == lang ? "selected" : null)">@lang</option>
+        }
+    </select>
+
+    <select name="year">
+        <option value="">All Years</option>
+        @foreach (var year in Model.AvailableYears)
+        {
+            <option value="@year" selected="@(Model.Year == year ? "selected" : null)">@year</option>
+        }
+    </select>
+
+    <button type="submit">Filter</button>
+    <input type="hidden" name="pageSize" value="@Model.PageSize" />
+</form>
+
+<form method="get" class="view-mode-form">
+    <label for="viewMode">View Mode:</label>
+    <select id="viewMode" name="viewMode" onchange="this.form.submit()">
+        <option value="table" selected="@("table" == Model.ViewMode)">Table</option>
+        <option value="grid" selected="@("grid" == Model.ViewMode)">Grid</option>
+        <option value="card" selected="@("card" == Model.ViewMode)">Card</option>
+    </select>
+</form>
+<div class="pagination">
+    @if (Model.TotalPages > 1)
+    {
+        int maxPagesToShow = 10;
+        int startPage = Math.Max(1, Model.PageNumber - maxPagesToShow / 2);
+        int endPage = Math.Min(Model.TotalPages, startPage + maxPagesToShow - 1);
+
+        if (startPage > 1)
+        {
+            <a class="page-button" asp-page="Books" asp-route-pageNumber="1" asp-route-pageSize="@Model.PageSize" asp-route-searchTitle="@Model.SearchTitle" asp-route-language="@Model.Language" asp-route-year="@Model.Year">1</a>
+            <span>...</span>
+        }
+
+        for (int i = startPage; i <= endPage; i++)
+        {
+            <a class="page-button @(i == Model.PageNumber ? "active" : null)"
+               asp-page="Books"
+               asp-route-pageNumber="@i"
+               asp-route-pageSize="@Model.PageSize"
+               asp-route-searchTitle="@Model.SearchTitle"
+               asp-route-language="@Model.Language"
+               asp-route-year="@Model.Year">
+                @i
+            </a>
+        }
+
+        if (endPage < Model.TotalPages)
+        {
+            <span>...</span>
+            <a class="page-button" asp-page="Books" asp-route-pageNumber="@Model.TotalPages" asp-route-pageSize="@Model.PageSize" asp-route-searchTitle="@Model.SearchTitle" asp-route-language="@Model.Language" asp-route-year="@Model.Year">@Model.TotalPages</a>
+        }
+    }
+</div>
+
+@if (Model.ViewMode == "grid")
+{
+    <div class="book-grid">
+        @foreach (var book in Model.Books)
+        {
+            var downloadUrl = $"https://download.books.ms/main/{(book.Id / 1000) * 1000:D7}/{book.MD5?.ToLowerInvariant()}/{Uri.EscapeDataString($"{book.Author ?? "NoAuthor"} - {book.Title ?? "NoTitle"}-{book.Publisher ?? "NoPublisher"} ({book.Year ?? ""})")}.{book.Extension?.ToLowerInvariant()}";
+            var proxyUrl = $"/Download?url={Uri.EscapeDataString(downloadUrl)}";
+            var coverUrl = $"https://libgen.is/covers/{(book.Id / 1000) * 1000:D7}/{book.MD5?.ToLowerInvariant()}-g.jpg";
+            
+                <div class="book-card">
+                    <div class="card-badges">
+                    <span class="publisher-badge">@((book.Publisher?.Length ?? 0) > 10 ? book.Publisher.Substring(0, 10) + "…" : book.Publisher)</span>
+                    <span class="year-badge">@book.Year</span>
+                    </div>
+                <a href="@proxyUrl">
+                <img src="/Cover?id=@book.Id&md5=@book.MD5" alt="cover" class="cover-thumb"
+                 alt="Cover"                    
+                    onerror="this.onerror=null;this.src='/images/default-cover.png';" />
+                </a>
+               <div class="book-title big-bold">@book.Title</div>
+                <div class="book-author">
+                    @((book.Author?.Length ?? 0) > 25 ? book.Author.Substring(0, 25) + "..." : book.Author)
+                </div>
+            </div>
+            
+        }
+    </div>
+}
+else if(Model.ViewMode == "card")
+{
+    <div class="container">
+         @foreach (var book in Model.Books)
+        {
+            var downloadUrl = $"https://download.books.ms/main/{(book.Id / 1000) * 1000:D7}/{book.MD5?.ToLowerInvariant()}/{Uri.EscapeDataString($"{book.Author ?? "NoAuthor"} - {book.Title ?? "NoTitle"}-{book.Publisher ?? "NoPublisher"} ({book.Year ?? ""})")}.{book.Extension?.ToLowerInvariant()}";
+            var proxyUrl = $"/Download?url={Uri.EscapeDataString(downloadUrl)}";
+            var coverUrl = $"https://libgen.is/covers/{(book.Id / 1000) * 1000:D7}/{book.MD5?.ToLowerInvariant()}-g.jpg";
+		<div class="card">
+			<a href="@proxyUrl">
+                <img src="/Cover?id=@book.Id&md5=@book.MD5" alt="cover" class="cover-thumb"
+                 alt="Cover"                    
+                    onerror="this.onerror=null;this.src='/images/default-cover.png';" />
+                </a>
+			<h3>@book.Title</h3>
+			<p>@book.Author</p>
+			<p>@book.Publisher</p>
+            <p>@book.Year</p>
+            <a href="@proxyUrl">
+				<button>Download</button>
+			</a>
+		</div>
+		}
+	</div>
+}    
+else if(Model.ViewMode == "table")
+{
+<table class="table">
+    <thead>
+        <tr>
+            
+            <th>Id</th>
+            <th>Title</th>
+            <th>Author</th>
+            <th>Year</th>
+            <th>Publisher</th>
+            <th>Language</th>
+            <th>Extension</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var book in Model.Books)
+    {
+        <tr>
+            @{
+                var downloadUrl = $"https://download.books.ms/main/{(book.Id / 1000) * 1000:D7}/{book.MD5?.ToLowerInvariant()}/{Uri.EscapeDataString($"{book.Author ?? "NoAuthor"} - {book.Title ?? "NoTitle"}-{book.Publisher ?? "NoPublisher"} ({book.Year ?? ""})")}.{book.Extension?.ToLowerInvariant()}";
+                var proxyUrl = $"/Download?url={Uri.EscapeDataString(downloadUrl)}";
+                var coverUrl = $"https://libgen.is/covers/{(book.Id / 1000) * 1000:D7}/{book.MD5?.ToLowerInvariant()}-g.jpg";
+            }
+            <td>@book.Id</td>
+            <td><a href="https://books.ms/main/@book.MD5" target="_blank">@book.Title</a></td>
+            <td>@book.Author</td>
+            <td>@book.Year</td>
+            <td>@book.Publisher</td>
+            <td>@book.Language</td>
+            <td>@book.Extension</td>
+            <td>                
+                <a href="@proxyUrl"><img src="/Cover?id=@book.Id&md5=@book.MD5" alt="Cover" style="max-height: 100px;" /></a>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+}
+
+
+
+
+<script>
+    function downloadFile(url) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = '';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+</script>
