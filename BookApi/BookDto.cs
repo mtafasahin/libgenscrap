@@ -11,4 +11,5 @@ public class BookDto
     public long FileSize { get; set; }
     public string? Extension { get; set; }
     public string? MD5 { get; set; }
+    public bool IsNew { get; set; }
 }

@@ -87,7 +87,7 @@ public class BooksModel : PageModel
 
         using var cmd = conn.CreateCommand();
         cmd.CommandText = $@"
-            SELECT Books.Id, Books.Title, Books.Author, Books.Year, Books.Publisher, Books.Language, Books.MD5, Books.Extension
+            SELECT Books.Id, Books.Title, Books.Author, Books.Year, Books.Publisher, Books.Language, Books.MD5, Books.Extension, Books.IsNew
             FROM Books
             JOIN BooksFTS ON Books.Id = BooksFTS.rowid
             WHERE 1=1
@@ -117,9 +117,25 @@ public class BooksModel : PageModel
                 Publisher = reader.IsDBNull(4) ? null : reader.GetString(4),
                 Language = reader.IsDBNull(5) ? null : reader.GetString(5),
                 MD5 = reader.IsDBNull(6) ? null : reader.GetString(6),
-                Extension = reader.IsDBNull(7) ? null : reader.GetString(7)
+                Extension = reader.IsDBNull(7) ? null : reader.GetString(7),
+                IsNew = reader.GetBoolean(8)
             });
         }
+
+        // listelenen kitapların isNew kolonunu güncelle
+        var bookIds = Books.Select(b => b.Id).ToList();
+        if (bookIds.Count > 0)
+        {
+            MarkBooksAsSeen(conn, bookIds);
+        }
+    }
+
+    public void MarkBooksAsSeen(SqliteConnection conn, IEnumerable<int> bookIds)
+    {
+        using var cmd = conn.CreateCommand();
+        cmd.CommandText = "UPDATE Books SET IsNew = FALSE WHERE Id IN (@Ids)";
+        cmd.Parameters.AddWithValue("@Ids", string.Join(",", bookIds));
+        cmd.ExecuteNonQuery();
     }
 
     private List<string> QueryColumnDistinct(SqliteConnection conn, string column)

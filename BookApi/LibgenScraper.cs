@@ -79,7 +79,7 @@ public class LibgenScraper
                             string md5 = cells[11].Text.Trim();
 
                             using var insertCmd = connection.CreateCommand();
-                            insertCmd.CommandText = "INSERT INTO Books (Id, Title, Author, Year, Publisher, Language, Extension, MD5) VALUES (@id, @title, @auth, @year, @pub, @lang, @ext, @md5)";
+                            insertCmd.CommandText = "INSERT INTO Books (Id, Title, Author, Year, Publisher, Language, Extension, MD5, IsNew) VALUES (@id, @title, @auth, @year, @pub, @lang, @ext, @md5, @isNew)";
                             insertCmd.Parameters.AddWithValue("@id", currentId);
                             insertCmd.Parameters.AddWithValue("@title", title);
                             insertCmd.Parameters.AddWithValue("@auth", authors);
@@ -88,6 +88,7 @@ public class LibgenScraper
                             insertCmd.Parameters.AddWithValue("@lang", language);
                             insertCmd.Parameters.AddWithValue("@ext", extension);
                             insertCmd.Parameters.AddWithValue("@md5", md5);
+                            insertCmd.Parameters.AddWithValue("@isNew", true);
                             insertCmd.ExecuteNonQuery();
                         }
                         else
