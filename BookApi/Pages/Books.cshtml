@@ -263,7 +263,10 @@ button:hover {
             <option value="@year" selected="@(Model.Year == year ? "selected" : null)">@year</option>
         }
     </select>
-
+    <label>
+        <input type="checkbox" name="isNew" value="true" @(Model.IsNew == true ? "checked" : "") />
+        Sadece yeni kitaplar
+    </label>
     <button type="submit">Filter</button>
     <input type="hidden" name="pageSize" value="@Model.PageSize" />
 </form>

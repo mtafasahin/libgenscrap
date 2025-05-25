@@ -31,11 +31,13 @@ public class BooksModel : PageModel
 
     private static List<string>? _cachedLanguages;
     private static List<string>? _cachedYears;
+    public bool? IsNew { get; set; }
+
 
     public string ViewMode { get; set; } = "card";
 
     public void OnGet(int pageNumber = 1, int pageSize = 24, string? searchTitle = null, string? language = null, string? year = null,
-            string? viewMode = "card"
+            string? viewMode = "card", bool? isNew = null
         )
     {
         PageNumber = pageNumber;
@@ -44,6 +46,7 @@ public class BooksModel : PageModel
         Language = language;
         Year = year;
         ViewMode = viewMode;
+        IsNew = isNew;
 
         var baseFolder = _configuration["Database:BaseFolder"] ?? "libgenscrap";
         var fileName = _configuration["Database:FileName"] ?? "libgen.db";
@@ -74,11 +77,13 @@ public class BooksModel : PageModel
             JOIN BooksFTS ON Books.Id = BooksFTS.rowid
             WHERE 1=1
             {ftsClause}
+            AND (@isNew IS NULL OR IsNew = @isNew)
             AND (@language IS NULL OR Books.Language = @language)
             AND (@year IS NULL OR Books.Year = @year)";
         countCmd.Parameters.AddWithValue("@searchTitle", (object?)searchTitle ?? DBNull.Value);
         countCmd.Parameters.AddWithValue("@ftsQuery", string.IsNullOrEmpty(searchTitle) ? DBNull.Value : $"{searchTitle}*");
         countCmd.Parameters.AddWithValue("@language", (object?)language ?? DBNull.Value);
+        countCmd.Parameters.AddWithValue("@isNew", (object?)isNew ?? DBNull.Value);
         countCmd.Parameters.AddWithValue("@year", (object?)year ?? DBNull.Value);
         TotalCount = Convert.ToInt32(countCmd.ExecuteScalar());
 
@@ -94,6 +99,7 @@ public class BooksModel : PageModel
             {ftsClause}
             AND (@language IS NULL OR Books.Language = @language)
             AND (@year IS NULL OR Books.Year = @year)
+            AND (@isNew IS NULL OR IsNew = @isNew)
             ORDER BY Books.Id DESC
             LIMIT @pageSize OFFSET @offset";
 
@@ -101,6 +107,7 @@ public class BooksModel : PageModel
         cmd.Parameters.AddWithValue("@ftsQuery", string.IsNullOrEmpty(searchTitle) ? DBNull.Value : $"{searchTitle}*");
         cmd.Parameters.AddWithValue("@language", (object?)language ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@year", (object?)year ?? DBNull.Value);
+        cmd.Parameters.AddWithValue("@isNew", (object?)isNew ?? DBNull.Value);
         cmd.Parameters.AddWithValue("@pageSize", PageSize);
         cmd.Parameters.AddWithValue("@offset", (PageNumber - 1) * PageSize);
 
